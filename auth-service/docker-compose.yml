@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: auth_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./docker/nginx/ssl:/etc/ssl/certs
+    depends_on:
+      - go-app
+      - keycloak
+    networks:
+      - auth-network
+
+  go-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_app
+    environment:
+      - ENV=production
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=auth_user
+      - DB_PASSWORD=auth_password
+      - DB_NAME=auth_system
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=auth-realm
+      - KEYCLOAK_CLIENT_ID=auth-client
+      - KEYCLOAK_CLIENT_SECRET=change-me
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+    volumes:
+      - ./migrations:/app/migrations
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - keycloak
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: auth_keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=change-me
+      - KC_DB=mysql
+      - KC_DB_URL=jdbc:mysql://mysql:3306/keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak
+      - KC_HOSTNAME=auth.example.com
+      - KC_PROXY=edge
+      - KC_HTTP_ENABLED=true
+    volumes:
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    command: ["start-dev", "--import-realm"]
+    ports:
+      - "8081:8080"
+    depends_on:
+      - mysql
+    networks:
+      - auth-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: auth_mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=auth_system
+      - MYSQL_USER=auth_user
+      - MYSQL_PASSWORD=auth_password
+      - MYSQL_INITDB_SKIP_TZINFO=1
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/custom.cnf
+      - ./migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: auth_mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - auth-network
+
+  redis:
+    image: redis:alpine
+    container_name: auth_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - auth-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  auth-network:
+    driver: bridge

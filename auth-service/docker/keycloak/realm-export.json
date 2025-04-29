@@ -1,0 +1,108 @@
+{
+    "id": "auth-realm",
+    "realm": "auth-realm",
+    "enabled": true,
+    "sslRequired": "external",
+    "registrationAllowed": true,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "resetPasswordAllowed": true,
+    "editUsernameAllowed": false,
+    "bruteForceProtected": true,
+    "roles": {
+      "realm": [
+        {
+          "name": "user",
+          "description": "Regular user"
+        },
+        {
+          "name": "admin",
+          "description": "Administrator"
+        }
+      ]
+    },
+    "clients": [
+      {
+        "clientId": "auth-client",
+        "enabled": true,
+        "publicClient": false,
+        "secret": "change-me",
+        "redirectUris": [
+          "https://auth.example.com/*"
+        ],
+        "webOrigins": [
+          "https://auth.example.com"
+        ],
+        "standardFlowEnabled": true,
+        "implicitFlowEnabled": false,
+        "directAccessGrantsEnabled": true,
+        "serviceAccountsEnabled": true,
+        "authorizationServicesEnabled": false,
+        "fullScopeAllowed": false,
+        "attributes": {
+          "client.secret.creation.time": "0",
+          "oauth2.device.authorization.grant.enabled": "false",
+          "backchannel.logout.revoke.offline.tokens": "false",
+          "backchannel.logout.session.required": "true"
+        }
+      }
+    ],
+    "identityProviders": [
+      {
+        "alias": "google",
+        "providerId": "google",
+        "enabled": true,
+        "trustEmail": true,
+        "storeToken": false,
+        "addReadTokenRoleOnCreate": false,
+        "authenticateByDefault": false,
+        "config": {
+          "clientId": "your-google-client-id",
+          "clientSecret": "your-google-client-secret",
+          "useJwksUrl": "true",
+          "hostedDomain": "example.com",
+          "defaultScope": "openid profile email"
+        }
+      },
+      {
+        "alias": "facebook",
+        "providerId": "facebook",
+        "enabled": true,
+        "trustEmail": true,
+        "storeToken": false,
+        "addReadTokenRoleOnCreate": false,
+        "authenticateByDefault": false,
+        "config": {
+          "clientId": "your-facebook-app-id",
+          "clientSecret": "your-facebook-app-secret",
+          "defaultScope": "public_profile,email"
+        }
+      }
+    ],
+    "requiredActions": [
+      {
+        "alias": "terms_and_conditions",
+        "name": "Terms and Conditions",
+        "providerId": "terms_and_conditions",
+        "enabled": false,
+        "defaultAction": false,
+        "priority": 10
+      },
+      {
+        "alias": "UPDATE_PASSWORD",
+        "name": "Update Password",
+        "providerId": "UPDATE_PASSWORD",
+        "enabled": true,
+        "defaultAction": false,
+        "priority": 30
+      },
+      {
+        "alias": "VERIFY_EMAIL",
+        "name": "Verify Email",
+        "providerId": "VERIFY_EMAIL",
+        "enabled": true,
+        "defaultAction": false,
+        "priority": 50
+      }
+    ]
+  }
